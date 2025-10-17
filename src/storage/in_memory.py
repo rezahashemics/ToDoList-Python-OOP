@@ -3,6 +3,7 @@ from src.core.models import Project, Task
 import os
 from dotenv import load_dotenv
 from src.core.models import TaskStatus
+from datetime import datetime
 
 load_dotenv()  # Load .env
 MAX_PROJECTS = int(os.getenv("MAX_NUMBER_OF_PROJECT", 10))
@@ -67,15 +68,44 @@ class InMemoryStorage:
             raise ValueError("Task not found")
         task.update_status(TaskStatus(new_status))
 
-    def update_task(self, project_id: int, task_id: int, title: str, description: str, deadline: Optional[str]):
-        # Similar to above, find task and update fields with validations
-        return
-        
+    # ... (rest of the file above remains the same)
+
+    def update_task(self, project_id: int, task_id: int, title: str, description: str, deadline: Optional[str], status: str):
+        project = self.get_project(project_id)
+        if not project:
+            raise ValueError("Project not found")
+        task = next((t for t in project.tasks if t.id == task_id), None)
+        if not task:
+            raise ValueError("Task not found")
+        # Validations (reuse logic similar to Task creation)
+        if len(title.split()) > 30:
+            raise ValueError("Title must be <= 30 words")
+        if description and len(description.split()) > 150:
+            raise ValueError("Description must be <= 150 words")
+        dl = datetime.fromisoformat(deadline) if deadline else None
+        if dl and dl < datetime.now():
+            raise ValueError("Deadline must be in the future")
+        try:
+            new_status = TaskStatus(status)
+        except ValueError:
+            raise ValueError("Invalid status")
+        # Apply updates
+        task.title = title
+        task.description = description
+        task.deadline = dl
+        task.status = new_status
+
     def delete_task(self, project_id: int, task_id: int):
         project = self.get_project(project_id)
         if not project:
             raise ValueError("Project not found")
+        # Remove the task if found, else no-op or error (per user story, show message in CLI)
+        initial_len = len(project.tasks)
         project.tasks = [t for t in project.tasks if t.id != task_id]
+        if len(project.tasks) == initial_len:
+            raise ValueError("Task not found")
+
+
 
     def get_tasks_for_project(self, project_id: int) -> List[Task]:
         project = self.get_project(project_id)

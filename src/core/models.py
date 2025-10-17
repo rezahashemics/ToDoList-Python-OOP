@@ -2,13 +2,22 @@ from typing import Optional
 from datetime import datetime
 from enum import Enum
 
+
 class TaskStatus(Enum):
     TODO = "todo"
     DOING = "doing"
     DONE = "done"
 
+
 class Task:
-    def __init__(self, id: int, title: str, description: str = "", status: TaskStatus = TaskStatus.TODO, deadline: Optional[datetime] = None):
+    def __init__(
+        self,
+        id: int,
+        title: str,
+        description: str = "",
+        status: TaskStatus = TaskStatus.TODO,
+        deadline: Optional[datetime] = None,
+    ):
         if len(title.split()) > 30:
             raise ValueError("Title must be <= 30 words")
         if description and len(description.split()) > 150:
@@ -27,6 +36,7 @@ class Task:
     # Add docstrings and other methods as needed (e.g., __str__ for printing)
     def __str__(self):
         return f"Task {self.id}: {self.title} ({self.status.value}) Deadline: {self.deadline}"
+
 
 class Project:
     def __init__(self, id: int, name: str, description: str = ""):

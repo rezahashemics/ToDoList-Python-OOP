@@ -1,5 +1,5 @@
 from src.storage.in_memory import InMemoryStorage
-from src.core.models import TaskStatus
+
 
 class CLI:
     def __init__(self):
@@ -7,14 +7,10 @@ class CLI:
 
     def run(self):
         while True:
-            print(
-                "\nOptions: 1. Create Project | 2. Edit Project | 3. Delete Project |"
-                " 4. List Projects"
-            )
-            print(
-                "5. Add Task | 6. Change Task Status | 7. Edit Task | 8. Delete Task |"
-                " 9. List Tasks | 0. Exit"
-            )
+            print("\nOptions:\n 1. Create Project\n 2. Edit Project")
+            print(" 3. Delete Project\n 4. List Projects")
+            print(" 5. Add Task\n 6. Change Task Status\n 7. Edit Task")
+            print(" 8. Delete Task\n 9. List Tasks\n 0. Exit")
             choice = input("Choose: ").strip()
             try:
                 if choice == "1":  # Create Project
@@ -44,8 +40,13 @@ class CLI:
                     title = input("Title: ").strip()
                     desc = input("Description: ").strip()
                     status = "todo"  # Default
-                    deadline = input("Deadline (YYYY-MM-DDTHH:MM:SS or empty): ").strip() or None
-                    task = self.storage.create_task(proj_id, title, desc, status, deadline)
+                    deadline = (
+                        input("Deadline (YYYY-MM-DDTHH:MM:SS or empty): ").strip()
+                        or None
+                    )
+                    task = self.storage.create_task(
+                        proj_id, title, desc, status, deadline
+                    )
                     print(f"Added: {task}")
                 elif choice == "6":  # Change Task Status
                     proj_id = int(input("Project ID: "))
@@ -58,9 +59,14 @@ class CLI:
                     task_id = int(input("Task ID: "))
                     title = input("New title: ").strip()
                     desc = input("New description: ").strip()
-                    deadline = input("New deadline (YYYY-MM-DDTHH:MM:SS or empty): ").strip() or None
+                    deadline = (
+                        input("New deadline (YYYY-MM-DDTHH:MM:SS or empty): ").strip()
+                        or None
+                    )
                     status = input("New status (todo/doing/done): ").strip()
-                    self.storage.update_task(proj_id, task_id, title, desc, deadline, status)
+                    self.storage.update_task(
+                        proj_id, task_id, title, desc, deadline, status
+                    )
                     print("Task updated")
                 elif choice == "8":  # Delete Task
                     proj_id = int(input("Project ID: "))
@@ -75,7 +81,9 @@ class CLI:
                     else:
                         for t in tasks:
                             dl = t.deadline.isoformat() if t.deadline else "None"
-                            print(f"{t.id}: {t.title} ({t.status.value}) Deadline: {dl}")
+                            print(
+                                f"{t.id}: {t.title} ({t.status.value}) Deadline: {dl}"
+                            )
                 elif choice == "0":
                     break
                 else:

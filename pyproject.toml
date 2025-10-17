@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "todo-list"
+version = "0.1.0"
+description = "In-memory ToDoList app using Python OOP"
+authors = ["reza hashemi <rezahashemipersonalemail@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+python-dotenv = "^1.1.1"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^25.9.0"
+flake8 = "^7.3.0"
+mypy = "^1.18.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

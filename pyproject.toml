@@ -1,20 +1,19 @@
 [tool.poetry]
-name = "todo-list"
-version = "0.1.0"
-description = "In-memory ToDoList app using Python OOP"
-authors = ["reza hashemi <rezahashemipersonalemail@gmail.com>"]
-license = "MIT"
-readme = "README.md"
+name = "todolist"
+version = "0.2.0"
+description = "ToDoList Phase 2 - Postgres + SQLAlchemy + Alembic"
+authors = ["Your Name <you@example.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.12"
-python-dotenv = "^1.1.1"
-
-
-[tool.poetry.group.dev.dependencies]
-black = "^25.9.0"
-flake8 = "^7.3.0"
-mypy = "^1.18.2"
+python = "^3.10"
+SQLAlchemy = "^2.0"
+alembic = "^1.11"
+psycopg2-binary = "^2.9"
+python-dotenv = "^1.0"
+click = "^8.1"
+schedule = "^1.2.0"    # optional if you use schedule lib
+# for tests
+pytest = {version = "^7.0", dev = true}
 
 [build-system]
 requires = ["poetry-core"]

@@ -69,12 +69,46 @@ A modular, object-oriented ToDoList application built with Python, featuring in-
   - `mypy`: Type checking.
   - Run checks: `poetry run black .`, `poetry run flake8 src`, `poetry run mypy src`.
 
-## Future Plans
-- Phase 2: Replace in-memory storage with SQLite for persistence.
-- Add unit tests with `pytest`.
-- Enhance CLI with better formatting or a GUI option.
-- Implement logging for debugging.
+# ToDoList - Phase 2
 
+## Quick start
+
+1. Start Postgres:
+docker compose up -d
+
+2. Set env var (or copy .env.example -> .env):
+export DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/todolist
+
+
+3. Install dependencies:
+- with poetry:
+  ```
+  poetry install
+  poetry shell
+  ```
+- or with pip:
+  ```
+  python -m venv .venv
+  source .venv/bin/activate
+  pip install -r requirements.txt
+  ```
+
+4. Run alembic migrations:
+alembic upgrade head
+
+
+5. Use CLI:
+python -m app.main create-project "My Project" --description "..."
+python -m app.main create-task "Buy milk" --deadline "2025-12-01T09:00" --project-id 1
+python -m app.main list-tasks
+python -m app.main autoclose-overdue
+python -m app.main run-scheduler --interval-minutes 60
+
+
+6. Schedule cron (example to run every night at 2am):
+edit crontab:
+
+0 2 * * * /path/to/repo/scripts/run_autoclose.sh >> /var/log/todolist_autoclose.log 2>&1
 ## Contributing
 1. Fork the repository.
 2. Create a feature branch (`git checkout -b feature/<name>`).

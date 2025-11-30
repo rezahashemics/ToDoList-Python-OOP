@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
 
 # Import Schemas, Services, Repositories, and Dependencies
 from src.schemas import TaskCreate, TaskUpdate, TaskInDB
@@ -10,14 +9,14 @@ from src.repositories.project_repository import ProjectRepository
 from src.services.task_service import TaskService
 from src.db.dependencies import get_db
 from src.exceptions.repository_exceptions import NotFoundException
-from src.models.task import TaskStatus
 
-# Note: Tasks are nested under Projects
+# Tasks are nested under Projects, hence the dynamic path prefix
 router = APIRouter(prefix="/projects/{project_id}/tasks", tags=["Tasks"])
 
 
 # Dependency to initialize TaskService
 def get_task_service(db: Session = Depends(get_db)) -> TaskService:
+    """Dependency injection for TaskService."""
     task_repo = TaskRepository(db)
     project_repo = ProjectRepository(db)
     return TaskService(task_repo, project_repo)
@@ -33,17 +32,19 @@ def create_task_for_project(
 ):
     """Create a new task within a specific project."""
     try:
-        # Service handles validation (e.g., project_id existence)
+        # Note: We pass deadline as string, service handles parsing
         task = service.create_task(
             project_id=project_id,
             title=task_data.title,
             description=task_data.description,
-            deadline=task_data.deadline.isoformat() if task_data.deadline else None # Service expects ISO string or None
+            deadline=task_data.deadline.isoformat() if task_data.deadline else None
         )
         return task
     except NotFoundException as e:
+        # Project not found
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValueError as e:
+        # Validation or date parsing error
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
@@ -53,13 +54,11 @@ def list_tasks_by_project(
     service: TaskService = Depends(get_task_service)
 ):
     """Retrieve all tasks for a given project."""
-    # Note: Service handles checking if the project exists
-    tasks = service.list_tasks_by_project(project_id)
-    if tasks is None: # Assuming service returns None/[] if project doesn't exist
-         # We rely on the project existence check from the service layer
-         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found.")
-         
-    return tasks
+    try:
+        # Service throws 404 if project is not found
+        return service.list_tasks_by_project(project_id)
+    except NotFoundException as e:
+         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.put("/{task_id}", response_model=TaskInDB)
@@ -69,10 +68,9 @@ def update_task_in_project(
     task_data: TaskUpdate,
     service: TaskService = Depends(get_task_service)
 ):
-    """Update an existing task."""
+    """Update an existing task, including status change."""
     try:
-        # We need an update_task method in TaskService that handles both update and status change
-        # Assuming the service method is implemented to take all necessary fields
+        # Note: We pass deadline as string, service handles parsing
         updated_task = service.update_task(
             project_id=project_id,
             task_id=task_id,
@@ -83,8 +81,10 @@ def update_task_in_project(
         )
         return updated_task
     except NotFoundException as e:
+        # Project or Task not found
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValueError as e:
+        # Validation or date parsing error
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
@@ -97,7 +97,8 @@ def delete_task_in_project(
     """Delete a task."""
     try:
         service.delete_task(project_id=project_id, task_id=task_id)
-        # FastAPI returns 204 No Content for successful deletion by default
+        # 204 No Content is returned on successful deletion
         return 
     except NotFoundException as e:
+        # Task not found
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

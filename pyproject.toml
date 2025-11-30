@@ -12,6 +12,8 @@ psycopg2-binary = "^2.9"
 python-dotenv = "^1.0"
 # click = "^8.1" # در این فاز ضرورتی ندارد
 # schedule = "^1.2.0" # در این فاز ضرورتی ندارد
+fastapi = "^0.123.0"
+uvicorn = "^0.38.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0"

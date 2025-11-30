@@ -1,9 +1,9 @@
-from enum import Enum
+import enum
 from sqlalchemy import Column, Integer, String, DateTime, Enum as SQLEnum, ForeignKey
 from sqlalchemy.orm import relationship
 from src.db.base import Base
 
-class TaskStatus(Enum):
+class TaskStatus(str, enum.Enum):
     TODO = "todo"
     DOING = "doing"
     DONE = "done"
@@ -15,7 +15,11 @@ class Task(Base):
     project_id = Column(Integer, ForeignKey("projects.id"), index=True) 
     title = Column(String)
     description = Column(String, nullable=True)
-    status = Column(SQLEnum(TaskStatus), default=TaskStatus.TODO) 
+    status = Column(
+	SQLEnum(TaskStatus, values_callable=lambda x: [e.value for e in x], create_type=False, native_enum=False),
+        default=TaskStatus.TODO.value,
+        nullable=False
+	)	 
     deadline = Column(DateTime, nullable=True)
     closed_at = Column(DateTime, nullable=True) # Added for autoclose feature
     

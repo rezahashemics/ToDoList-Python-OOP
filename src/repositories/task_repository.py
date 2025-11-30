@@ -1,52 +1,73 @@
-from typing import List, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import select, update as sql_update
-from src.models.task import Task, TaskStatus
-from src.models.project import Project 
+from typing import List, Optional
 from datetime import datetime
 
-class TaskRepository:
-    def __init__(self, db: Session):
-        self.db = db
+from src.models.task import Task, TaskStatus
+from src.models.project import Project
+from src.exceptions.repository_exceptions import NotFoundException
 
-    def create(self, project_id: int, title: str, description: str, status: TaskStatus, deadline: Optional[datetime]) -> Task:
+class TaskRepository:
+    """
+    Repository layer for managing Task models in the database.
+    """
+    def __init__(self, db_session: Session):
+        self.session = db_session
+
+    # 💡 این متد add باید وجود داشته باشد
+    def add(self, project_id: int, title: str, description: Optional[str], deadline: Optional[datetime]) -> Task:
+        """Adds a new Task to the database."""
+        
+        # Check if the project exists (optional but good for early failure)
+        # Note: We commented this out in previous examples, but keeping it as a check point
+        # if not self.session.query(Project).filter(Project.id == project_id).first():
+        #     # In the service layer, we also check this, so commenting this out for repository purity
+        #     # raise NotFoundException(f"Project ID {project_id} not found.")
+
         new_task = Task(
             project_id=project_id,
             title=title,
             description=description,
-            status=status,
-            deadline=deadline,
+            deadline=deadline
         )
-        self.db.add(new_task)
-        self.db.commit()
-        self.db.refresh(new_task)
+        self.session.add(new_task)
+        self.session.commit()
+        self.session.refresh(new_task)
         return new_task
+    
+    # ... (بقیه متدها: get_by_project, get_by_id, update, delete) ...
+
+    def get_by_project(self, project_id: int) -> List[Task]:
+        """Retrieves all tasks for a given project ID."""
+        return self.session.query(Task).filter(Task.project_id == project_id).all()
 
     def get_by_id(self, project_id: int, task_id: int) -> Optional[Task]:
-        # Query task by ID within a specific project
-        stmt = select(Task).where(Task.project_id == project_id, Task.id == task_id)
-        return self.db.scalars(stmt).one_or_none()
-    
-    def get_overdue_and_open_tasks(self) -> List[Task]:
-        """Fetches tasks whose deadline has passed and status is not DONE."""
-        stmt = select(Task).where(
-            Task.deadline < datetime.now(),
-            Task.status != TaskStatus.DONE
-        )
-        return self.db.scalars(stmt).all()
-        
-    def get_tasks_by_project(self, project_id: int) -> List[Task]:
-        stmt = select(Task).where(Task.project_id == project_id)
-        return self.db.scalars(stmt).all()
+        """Retrieves a single task by its ID and project ID."""
+        return self.session.query(Task).filter(
+            Task.id == task_id,
+            Task.project_id == project_id
+        ).first()
 
-    def update(self, task: Task, title: str, description: str, deadline: Optional[datetime], status: TaskStatus, closed_at: Optional[datetime] = None):
+    def update(
+        self, 
+        task: Task, 
+        title: str, 
+        description: Optional[str], 
+        deadline: Optional[datetime], 
+        status: TaskStatus, 
+        closed_at: Optional[datetime]
+    ) -> None:
+        """Updates an existing task object and persists changes."""
+        
         task.title = title
         task.description = description
         task.deadline = deadline
         task.status = status
         task.closed_at = closed_at
-        self.db.commit()
         
-    def delete(self, task: Task):
-        self.db.delete(task)
-        self.db.commit()
+        self.session.commit()
+        self.session.refresh(task)
+
+    def delete(self, task: Task) -> None:
+        """Deletes a task object."""
+        self.session.delete(task)
+        self.session.commit()

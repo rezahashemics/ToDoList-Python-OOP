@@ -36,8 +36,21 @@ def create_task_for_project(
         return task
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    # Note: If Project ID is invalid (FK violation), SQLAlchemy usually raises IntegrityError 
-    # which results in a 500, unless specifically caught and handled.
+
+
+# 💡 اضافه شدن این متد حیاتی برای GET /v1/projects/{project_id}/tasks/
+@router.get("/", response_model=List[TaskInDB]) 
+def list_tasks_for_project(
+    project_id: int, 
+    service: TaskService = Depends(get_task_service)
+):
+    """Retrieve a list of all tasks for a specific project."""
+    # Note: If list_tasks_by_project logic ensures project existence, 
+    # we might need to add ProjectService dependency here to check for 404 on project_id.
+    # For now, relying on list_tasks_by_project to return an empty list if project exists 
+    # but has no tasks, or letting an IntegrityError pass as 500 if project doesn't exist.
+    return service.list_tasks_by_project(project_id)
+
 
 @router.get("/{task_id}", response_model=TaskInDB)
 def get_task_for_project(
@@ -52,7 +65,7 @@ def get_task_for_project(
     except NotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
-# 💡 بخش به‌روزرسانی (PUT)
+
 @router.put("/{task_id}", response_model=TaskInDB)
 def update_task_for_project(
     project_id: int, 
@@ -72,7 +85,6 @@ def update_task_for_project(
         )
         return updated_task
     except NotFoundException as e:
-        # 💡 NotFoundException را از Service دریافت کرده و 404 برمی‌گرداند.
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

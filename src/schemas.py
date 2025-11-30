@@ -6,44 +6,50 @@ from src.models.task import TaskStatus # Import TaskStatus Enum
 # --- Task Schemas ---
 
 class TaskBase(BaseModel):
+    """Base schema for common task fields."""
     title: str = Field(..., max_length=100)
     description: Optional[str] = None
     deadline: Optional[datetime] = None
 
 class TaskCreate(TaskBase):
-    # project_id will be captured from the URL path in the router
+    """Schema for creating a new task."""
     pass
 
 class TaskUpdate(TaskBase):
-    # Pydantic V2 handles standard Python Enums (TaskStatus) directly
+    """Schema for updating an existing task."""
+    # Status is included here as it can be updated
     status: TaskStatus = TaskStatus.TODO
 
 class TaskInDB(TaskBase):
-    """Schema for returning Task data."""
+    """Schema for returning Task data from the database."""
     id: int
     project_id: int
     status: TaskStatus
     closed_at: Optional[datetime] = None
 
     class Config:
-        # Allows Pydantic to read ORM objects (Task model)
-        orm_mode = True 
-        use_enum_values = True 
+        # Pydantic V2: Enables reading data from ORM objects (SQLAlchemy)
+        from_attributes = True 
+        # Note: use_enum_values = True is removed to fix the serialization error.
         
 # --- Project Schemas ---
 
 class ProjectBase(BaseModel):
+    """Base schema for common project fields."""
     name: str = Field(..., max_length=50)
     description: Optional[str] = None
 
 class ProjectCreate(ProjectBase):
+    """Schema for creating a new project."""
     pass
 
 class ProjectInDB(ProjectBase):
-    """Schema for returning Project data."""
+    """Schema for returning Project data from the database."""
     id: int
-    # Nested field to include related tasks in project response
+    # Nested field: Includes all related tasks when querying a project
     tasks: List[TaskInDB] = [] 
 
     class Config:
-        orm_mode = True
+        # Pydantic V2: Enables reading data from ORM objects (SQLAlchemy)
+        from_attributes = True
+        # Note: use_enum_values = True is removed.

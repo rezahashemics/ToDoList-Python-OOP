@@ -1,0 +1,57 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from typing import List
+
+# Import Schemas
+from src.schemas import ProjectCreate, ProjectInDB, TaskInDB
+
+# Import Services and Repositories
+from src.repositories.project_repository import ProjectRepository
+from src.services.project_service import ProjectService
+from src.db.dependencies import get_db
+from src.exceptions.repository_exceptions import NotFoundException
+
+router = APIRouter(prefix="/projects", tags=["Projects"])
+
+# Dependency that creates and provides the ProjectService
+def get_project_service(db: Session = Depends(get_db)) -> ProjectService:
+    repo = ProjectRepository(db)
+    return ProjectService(repo)
+
+
+# ------------------ Endpoints ------------------
+
+@router.post("/", response_model=ProjectInDB, status_code=status.HTTP_201_CREATED)
+def create_project(
+    project_data: ProjectCreate,
+    service: ProjectService = Depends(get_project_service)
+):
+    """Create a new project."""
+    try:
+        project = service.create_project(
+            name=project_data.name, 
+            description=project_data.description
+        )
+        return project
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get("/", response_model=List[ProjectInDB])
+def list_projects(service: ProjectService = Depends(get_project_service)):
+    """Retrieve a list of all projects."""
+    return service.list_projects()
+
+
+@router.get("/{project_id}", response_model=ProjectInDB)
+def get_project(project_id: int, service: ProjectService = Depends(get_project_service)):
+    """Retrieve a single project by ID."""
+    try:
+        project = service.repo.get_by_id(project_id) # Direct use of repo method for simplicity here
+        if not project:
+             raise NotFoundException
+        return project
+    except NotFoundException:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Project {project_id} not found")
+
+# Note: You would implement PUT/DELETE endpoints similarly

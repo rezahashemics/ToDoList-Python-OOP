@@ -1,58 +1,56 @@
 from typing import Optional
 from datetime import datetime
 from enum import Enum
+# Import SQLAlchemy types and Base
+from sqlalchemy import Column, Integer, String, DateTime, Enum as SQLEnum, ForeignKey
+from sqlalchemy.orm import relationship
+from src.db import Base # Import Base from our db setup
 
-
+# TaskStatus remains the same (Python Enum)
 class TaskStatus(Enum):
     TODO = "todo"
     DOING = "doing"
     DONE = "done"
 
+# Change Project and Task to inherit from Base
+# Project is defined before Task because Task has a foreign key to Project
 
-class Task:
-    def __init__(
-        self,
-        id: int,
-        title: str,
-        description: str = "",
-        status: TaskStatus = TaskStatus.TODO,
-        deadline: Optional[datetime] = None,
-    ):
-        if len(title.split()) > 30:
-            raise ValueError("Title must be <= 30 words")
-        if description and len(description.split()) > 150:
-            raise ValueError("Description must be <= 150 words")
-        if deadline and deadline < datetime.now():
-            raise ValueError("Deadline must be in the future")
-        self.id = id
-        self.title = title
-        self.description = description
-        self.status = status
-        self.deadline = deadline
+class Project(Base):
+    __tablename__ = "projects" # Table name in the database
 
-    def update_status(self, new_status: TaskStatus):
-        self.status = new_status
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    description = Column(String, nullable=True)
+    
+    # Relationship to tasks (back_populates is for bidirectional relationship)
+    tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
 
-    # Add docstrings and other methods as needed (e.g., __str__ for printing)
-    def __str__(self):
-        return f"Task {self.id}: {self.title} ({self.status.value}) Deadline: {self.deadline}"
-
-
-class Project:
-    def __init__(self, id: int, name: str, description: str = ""):
-        if len(name.split()) > 30:
-            raise ValueError("Name must be <= 30 words")
-        if description and len(description.split()) > 150:
-            raise ValueError("Description must be <= 150 words")
-        self.id = id
-        self.name = name
-        self.description = description
-        self.tasks: list[Task] = []
-
-    # Add task method with validation
-    def add_task(self, task: Task):
-        self.tasks.append(task)
-
-    # Other methods: edit, delete task, etc.
     def __str__(self):
         return f"Project {self.id}: {self.name}"
+
+# Add validation logic to be used before adding/updating in repository (not directly in model)
+# For simplicity, we are removing the word count validation from the __init__ of the model 
+# and moving all necessary attributes to be handled by SQLAlchemy.
+
+class Task(Base):
+    __tablename__ = "tasks" # Table name in the database
+
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), index=True) # Foreign Key
+    title = Column(String)
+    description = Column(String, nullable=True)
+    # Using SQLAlchemy's Enum type for TaskStatus
+    status = Column(SQLEnum(TaskStatus), default=TaskStatus.TODO) 
+    deadline = Column(DateTime, nullable=True)
+
+    # Relationship back to the project
+    project = relationship("Project", back_populates="tasks")
+
+    def __str__(self):
+        # Accessing the .value of the TaskStatus Enum for printing
+        dl = self.deadline.isoformat() if self.deadline else "None"
+        return f"Task {self.id}: {self.title} ({self.status.value}) Deadline: {dl}"
+
+    # We can keep the update_status method as a utility
+    def update_status(self, new_status: TaskStatus):
+        self.status = new_status

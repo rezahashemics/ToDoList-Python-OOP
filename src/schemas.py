@@ -3,13 +3,6 @@ from typing import Optional, List
 from datetime import datetime
 from src.models.task import TaskStatus # Import TaskStatus Enum
 
-# --- Base Schemas ---
-
-class TaskStatusSchema(BaseModel):
-    """Schema for TaskStatus Enum used in Pydantic."""
-    # This ensures Pydantic handles the enum correctly
-    __root__: TaskStatus 
-
 # --- Task Schemas ---
 
 class TaskBase(BaseModel):
@@ -22,6 +15,7 @@ class TaskCreate(TaskBase):
     pass
 
 class TaskUpdate(TaskBase):
+    # Pydantic V2 handles standard Python Enums (TaskStatus) directly
     status: TaskStatus = TaskStatus.TODO
 
 class TaskInDB(TaskBase):
